@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TactiXO</title>
+<style>
+  :root{
+    --ink: #12141B;
+    --panel: #1B1E28;
+    --panel-raised: #232732;
+    --line: #333748;
+    --text: #EDEFF5;
+    --muted: #8A8FA3;
+    --x: #FF6B4A;
+    --x-dim: #6B3B31;
+    --o: #45E0D8;
+    --o-dim: #29615D;
+    --win: #F5C542;
+    --radius: 18px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  html, body{
+    height: 100%;
+  }
+
+  body{
+    margin: 0;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255,107,74,0.08), transparent 40%),
+      radial-gradient(circle at 84% 88%, rgba(69,224,216,0.08), transparent 40%),
+      var(--ink);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .app{
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* ---------- Wordmark ---------- */
+  .wordmark{
+    text-align: center;
+    user-select: none;
+  }
+
+  .wordmark h1{
+    margin: 0;
+    font-size: 42px;
+    letter-spacing: -0.01em;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .wordmark h1 .tacti{ color: var(--text); }
+  .wordmark h1 .x{ color: var(--x); }
+  .wordmark h1 .o{ color: var(--o); }
+
+  .wordmark p{
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Scoreboard ---------- */
+  .scoreboard{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .score{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align: center;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .score .label{
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .score .value{
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .score.x .value{ color: var(--x); }
+  .score.o .value{ color: var(--o); }
+  .score.draw .value{ color: var(--muted); }
+
+  .score.active{
+    border-color: currentColor;
+    transform: translateY(-2px);
+  }
+  .score.x.active{ color: var(--x); }
+  .score.o.active{ color: var(--o); }
+
+  /* ---------- Status line ---------- */
+  .status{
+    text-align: center;
+    min-height: 22px;
+    font-size: 15px;
+    color: var(--muted);
+  }
+
+  .status strong.x{ color: var(--x); }
+  .status strong.o{ color: var(--o); }
+
+  /* ---------- Board ---------- */
+  .board-wrap{
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px;
+  }
+
+  .board{
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    aspect-ratio: 1 / 1;
+  }
+
+  .cell{
+    background: var(--panel-raised);
+    border: none;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    transition: background 0.15s ease;
+  }
+
+  .cell:hover:not(:disabled){
+    background: #2A2F3C;
+  }
+
+  .cell:disabled{
+    cursor: default;
+  }
+
+  .cell:focus-visible{
+    outline: 2px solid var(--o);
+    outline-offset: 3px;
+  }
+
+  .cell svg{
+    width: 46%;
+    height: 46%;
+    overflow: visible;
+  }
+
+  .cell svg path, .cell svg line{
+    fill: none;
+    stroke-width: 9;
+    stroke-linecap: round;
+  }
+
+  .cell.x svg *{ stroke: var(--x); }
+  .cell.o svg *{ stroke: var(--o); }
+
+  .mark-draw{
+    stroke-dasharray: 140;
+    stroke-dashoffset: 140;
+    animation: draw-mark 0.28s ease forwards;
+  }
+
+  @keyframes draw-mark{
+    to{ stroke-dashoffset: 0; }
+  }
+
+  .cell.win{
+    background: rgba(245, 197, 66, 0.12);
+  }
+
+  .win-line{
+    position: absolute;
+    inset: 12px;
+    pointer-events: none;
+  }
+
+  .win-line line{
+    stroke: var(--win);
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+    animation: draw-win 0.35s ease forwards;
+  }
+
+  @keyframes draw-win{
+    to{ stroke-dashoffset: 0; }
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  button.action{
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+
+  button.action:hover{
+    border-color: var(--muted);
+  }
+
+  button.action:active{
+    transform: scale(0.97);
+  }
+
+  button.action:focus-visible{
+    outline: 2px solid var(--o);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 360px){
+    .wordmark h1{ font-size: 34px; }
+    .cell svg{ width: 42%; height: 42%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="wordmark">
+    <h1><span class="tacti">Tacti</span><span class="x">X</span><span class="o">O</span></h1>
+    <p>a two-player tic-tac-toe</p>
+  </div>
+
+  <div class="scoreboard">
+    <div class="score x" id="score-x">
+      <div class="label">Player X</div>
+      <div class="value" id="score-x-value">0</div>
+    </div>
+    <div class="score draw" id="score-draw">
+      <div class="label">Draws</div>
+      <div class="value" id="score-draw-value">0</div>
+    </div>
+    <div class="score o" id="score-o">
+      <div class="label">Player O</div>
+      <div class="value" id="score-o-value">0</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">Player X goes first</div>
+
+  <div class="board-wrap">
+    <div class="board" id="board" role="grid" aria-label="Tic-tac-toe board"></div>
+  </div>
+
+  <div class="controls">
+    <button class="action" id="new-round">New round</button>
+    <button class="action" id="reset-scores">Reset scores</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var boardEl = document.getElementById("board");
+  var statusEl = document.getElementById("status");
+  var scoreXEl = document.getElementById("score-x-value");
+  var scoreOEl = document.getElementById("score-o-value");
+  var scoreDrawEl = document.getElementById("score-draw-value");
+  var scoreXCard = document.getElementById("score-x");
+  var scoreOCard = document.getElementById("score-o");
+  var newRoundBtn = document.getElementById("new-round");
+  var resetScoresBtn = document.getElementById("reset-scores");
+
+  var LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  var cells = [];
+  var boardState = new Array(9).fill(null);
+  var current = "X";
+  var gameOver = false;
+  var scores = { X: 0, O: 0, draw: 0 };
+
+  function xMark(){
+    return '<svg viewBox="0 0 100 100"><path class="mark-draw" d="M22 22 L78 78"/><path class="mark-draw" style="animation-delay:0.05s" d="M78 22 L22 78"/></svg>';
+  }
+
+  function oMark(){
+    return '<svg viewBox="0 0 100 100"><circle class="mark-draw" cx="50" cy="50" r="32" style="stroke-dasharray:210;stroke-dashoffset:210;"/></svg>';
+  }
+
+  function buildBoard(){
+    boardEl.innerHTML = "";
+    cells = [];
+    for(var i = 0; i < 9; i++){
+      var btn = document.createElement("button");
+      btn.className = "cell";
+      btn.setAttribute("role", "gridcell");
+      btn.setAttribute("aria-label", "Cell " + (i + 1));
+      btn.dataset.index = i;
+      btn.addEventListener("click", onCellClick);
+      boardEl.appendChild(btn);
+      cells.push(btn);
+    }
+  }
+
+  function onCellClick(e){
+    var i = parseInt(e.currentTarget.dataset.index, 10);
+    if(gameOver || boardState[i] !== null){ return; }
+    place(i, current);
+
+    var result = checkResult();
+    if(result){
+      finishRound(result);
+      return;
+    }
+
+    current = current === "X" ? "O" : "X";
+    updateStatus();
+    updateActiveScore();
+  }
+
+  function place(i, mark){
+    boardState[i] = mark;
+    var cell = cells[i];
+    cell.classList.add(mark === "X" ? "x" : "o");
+    cell.innerHTML = mark === "X" ? xMark() : oMark();
+    cell.disabled = true;
+    cell.setAttribute("aria-label", "Cell " + (i + 1) + ", " + mark);
+  }
+
+  function checkResult(){
+    for(var l = 0; l < LINES.length; l++){
+      var a = LINES[l][0], b = LINES[l][1], c = LINES[l][2];
+      if(boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]){
+        return { winner: boardState[a], line: LINES[l] };
+      }
+    }
+    if(boardState.every(function(v){ return v !== null; })){
+      return { winner: null, line: null };
+    }
+    return null;
+  }
+
+  function finishRound(result){
+    gameOver = true;
+    cells.forEach(function(c){ c.disabled = true; });
+
+    if(result.winner){
+      scores[result.winner]++;
+      result.line.forEach(function(i){ cells[i].classList.add("win"); });
+      drawWinLine(result.line);
+      statusEl.innerHTML = "Player <strong class=\"" + result.winner.toLowerCase() + "\">" + result.winner + "</strong> wins";
+    } else {
+      scores.draw++;
+      statusEl.textContent = "It's a draw";
+    }
+
+    scoreXEl.textContent = scores.X;
+    scoreOEl.textContent = scores.O;
+    scoreDrawEl.textContent = scores.draw;
+    scoreXCard.classList.remove("active");
+    scoreOCard.classList.remove("active");
+  }
+
+  function drawWinLine(line){
+    var wrap = document.querySelector(".board-wrap");
+    var existing = wrap.querySelector(".win-line");
+    if(existing){ existing.remove(); }
+
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "win-line");
+    svg.setAttribute("viewBox", "0 0 300 300");
+    svg.setAttribute("preserveAspectRatio", "none");
+
+    var coords = {
+      0: [50,50], 1: [150,50], 2: [250,50],
+      3: [50,150], 4: [150,150], 5: [250,150],
+      6: [50,250], 7: [150,250], 8: [250,250]
+    };
+    var p1 = coords[line[0]];
+    var p2 = coords[line[2]];
+
+    var lineEl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    lineEl.setAttribute("x1", p1[0]);
+    lineEl.setAttribute("y1", p1[1]);
+    lineEl.setAttribute("x2", p2[0]);
+    lineEl.setAttribute("y2", p2[1]);
+    svg.appendChild(lineEl);
+    wrap.appendChild(svg);
+  }
+
+  function updateStatus(){
+    statusEl.innerHTML = "Player <strong class=\"" + current.toLowerCase() + "\">" + current + "</strong>'s turn";
+  }
+
+  function updateActiveScore(){
+    scoreXCard.classList.toggle("active", current === "X");
+    scoreOCard.classList.toggle("active", current === "O");
+  }
+
+  function newRound(){
+    boardState = new Array(9).fill(null);
+    current = "X";
+    gameOver = false;
+    buildBoard();
+    updateStatus();
+    updateActiveScore();
+    var existingLine = document.querySelector(".win-line");
+    if(existingLine){ existingLine.remove(); }
+  }
+
+  function resetScores(){
+    scores = { X: 0, O: 0, draw: 0 };
+    scoreXEl.textContent = "0";
+    scoreOEl.textContent = "0";
+    scoreDrawEl.textContent = "0";
+    newRound();
+  }
+
+  newRoundBtn.addEventListener("click", newRound);
+  resetScoresBtn.addEventListener("click", resetScores);
+
+  buildBoard();
+  updateStatus();
+  updateActiveScore();
+})();
+</script>
+
+</body>
+</html>
