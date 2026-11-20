@@ -6,4 +6,4 @@ The design leans into a dark, ink-toned interface with two distinct accent color
 
 The game tracks wins for each player along with draws across a full scoreboard, and highlights whose turn it currently is. A "New round" button clears the board while keeping the running score, and a "Reset scores" button starts everything over from zero. The board is fully keyboard accessible, with visible focus states on every cell and control, and the layout adapts down to small mobile screens.
 
-To play, just open the file in any modern browser. No build step, server, or installation is required.
+You can play it live at [https://its-nihad.github.io/tactixo/](https://its-nihad.github.io/tactixo/), or open the file locally in any modern browser. No build step, server, or installation is required.
